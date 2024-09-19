@@ -1,0 +1,156 @@
+{% extends "base.html" %}
+{% block content %}
+    <div class="container">
+        <div class="form-container">
+            <h1>📊 Что ты читаешь?</h1>
+            <form id="addLinkForm" action="{{ url_for('add_link') }}" method="post">
+                <div class="form-group">
+                    <label for="title">Название</label>
+                    <input type="text" id="title" name="title" placeholder="Например: Generative Pre-trained Transformer" required>
+                </div>
+                <div class="form-group">
+                    <label for="url">URL источника</label>
+                    <input type="url" id="url" name="url" placeholder="Так будет проще!" required>
+                </div>
+                <div class="form-group">
+                    <label for="description">Бриф</label>
+                    <textarea id="description" name="description" placeholder="Если нужно, введи в курс дела" rows="3"></textarea>
+                </div>
+                <button type="submit" class="submit-button">Добавить ссылку</button>
+            </form>
+        </div>
+
+        <div class="profile-container">
+            <h2 class="user-username">{{ user.username }}</h2>
+            {% if user.profile_image %}
+                <img src="{{ url_for('static', filename=user.profile_image) }}" alt="Profile Image" class="profile-image">
+            {% else %}
+                <p>Изображение профиля не загружено.</p>
+            {% endif %}
+            {% if user.profile_image %}
+                <img src="{{ url_for('static', filename=user.profile_image) }}" alt="Profile Image" class="profile-image">
+            {% endif %}
+            <p class="user-description">{{ user.description or '' }}</p>
+            {% if is_own_profile %}
+                <button id="editDescriptionBtn" class="edit-button">🆕</button>
+
+                <!-- Модальное окно для редактирования описания -->
+                <div id="editDescriptionModal" class="modal" style="display: none;">
+                    <div class="modal-content">
+                        <span class="close">&times;</span>
+                        <h2>Расскажи что-нибудь о себе :)</h2>
+                        <form id="editDescriptionForm" action="{{ url_for('edit_profile') }}" method="post" enctype="multipart/form-data">
+                            <textarea id="newDescription" name="description" rows="3" required>{{ user.description }}</textarea>
+                            <div class="form-group">
+                                <label for="profile_image">Загрузить изображение профиля:</label>
+                                <input type="file" name="profile_image" id="profile_image" accept="image/*">
+                            </div>
+                            <button type="submit" class="submit-button">Изменить статус</button>
+                        </form>
+                    </div>
+                </div>
+            {% endif %}
+        
+            <script>
+                // Открытие модального окна
+                document.getElementById('editDescriptionBtn').onclick = function() {
+                    document.getElementById('editDescriptionModal').style.display = 'block';
+                }
+            
+                // Закрытие модального окна
+                document.getElementsByClassName('close')[0].onclick = function() {
+                    document.getElementById('editDescriptionModal').style.display = 'none';
+                }
+            
+                // Закрытие модального окна при клике вне его
+                window.onclick = function(event) {
+                    const modal = document.getElementById('editDescriptionModal');
+                    if (event.target == modal) {
+                        modal.style.display = 'none';
+                    }
+                }
+            </script>
+        </div>
+    </div>
+
+    <ul>
+        {% for link in links %}
+            <li style="display: flex; justify-content: space-between; align-items: flex-start;">
+                <div style="flex-grow: 1;">
+                    <a href="{{ link.url }}" target="_blank" class="link-title">{{ link.title }}
+                        {% if link.created_at %}
+                            {% if link.created_at.date() == today %}
+                                <span class="link-count">(новое)</span>  <!-- Индикатор новых ссылок -->
+                            {% endif %}
+                        {% endif %}
+                    </a>
+                    {% if link.description %}
+                        <p>{{ link.description }}</p> 
+                    {% endif %}
+                    <div class="button-group">
+                        {% if 'user_id' in session %}
+                            {% if link.likes|selectattr('user_id', 'equalto', session['user_id'])|list %}
+                                <form action="{{ url_for('unlike_link', link_id=link.id) }}" method="post" style="display: inline;">
+                                    <button type="submit">👍 {{ link.likes|length }}</button>
+                                </form>
+                            {% else %}
+                                <form action="{{ url_for('like_link', link_id=link.id) }}" method="post" style="display: inline;">
+                                    <button type="submit">👍 {{ link.likes|length }}</button>
+                                </form>
+                            {% endif %}
+                            
+                            {% if link.dislikes|selectattr('user_id', 'equalto', session['user_id'])|list %}
+                                <form action="{{ url_for('undislike_link', link_id=link.id) }}" method="post" style="display: inline;">
+                                    <button type="submit">👎 {{ link.dislikes|length }}</button>
+                                </form>
+                            {% else %}
+                                <form action="{{ url_for('dislike_link', link_id=link.id) }}" method="post" style="display: inline;">
+                                    <button type="submit">👎 {{ link.dislikes|length }}</button>
+                                </form>
+                            {% endif %}
+
+                            {% if not link.read_status|selectattr('user_id', 'equalto', session['user_id'])|list %}
+                                <form action="{{ url_for('mark_as_read', link_id=link.id) }}" method="post" style="display: inline;">
+                                    <button type="submit">📖 {{ link.read_status|length }}</button>
+                                </form>
+                            {% else %}
+                                <form action="{{ url_for('mark_as_unread', link_id=link.id) }}" method="post" style="display: inline;">
+                                    <button type="submit">📖 {{ link.read_status|length }}</button>
+                                </form>
+                            {% endif %}
+                            {% if is_own_profile %}
+                                <form action="{{ url_for('delete_link', link_id=link.id) }}" method="post" style="display:inline;">
+                                    <button type="submit" class="delete-button">x</button>
+                                </form>
+                            {% endif %}
+                        {% endif %}
+                    </div>
+                    {% if link.created_at %}
+                        {{ link.created_at.strftime('%Y-%m-%d %H:%M') }} 
+                    {% endif %}
+                </div>
+                <div class="comment-block">
+                    <h4>💬</h4>
+                    <ul>
+                        {% for comment in link.comments %}
+                            <li>
+                                <strong>{{ comment.user.username }}:</strong> {{ comment.content }}
+                                {% if 'user_id' in session and comment.user_id == session['user_id'] %}
+                                    <form action="{{ url_for('delete_comment', link_id=link.id, comment_id=comment.id) }}" method="post" style="display: inline;">
+                                        <button type="submit" class="delete-comment-button">x</button>
+                                    </form>
+                                {% endif %}
+                            </li>
+                        {% endfor %}
+                    </ul>
+                    {% if 'user_id' in session %}
+                        <form action="{{ url_for('add_comment', link_id=link.id) }}" method="post">
+                            <input type="text" name="content" placeholder="" required>
+                        </form>
+                    {% endif %}
+                </div>
+            </li>
+        {% endfor %}
+    </ul>
+</div>
+{% endblock %}

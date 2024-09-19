@@ -1,0 +1,26 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Читаю - {{ user.username }}</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='reading_links.css') }}">
+</head>
+<body>
+    <div class="container">
+        <h2>Ссылки, которые я читаю</h2>
+        <ul>
+            {% for link in reading_links %}
+                <li>
+                    <a href="{{ link.url }}" target="_blank">{{ link.title }}</a>
+                    <p>{{ link.description }}</p>
+                    <p>{{ link.created_at.strftime('%Y-%m-%d %H:%M') }}</p>
+                </li>
+            {% else %}
+                <li>Нет ссылок, которые вы читаете.</li>
+            {% endfor %}
+        </ul>
+        <a href="{{ url_for('user_profile', username=user.username) }}">Назад к профилю</a>
+    </div>
+</body>
+</html>

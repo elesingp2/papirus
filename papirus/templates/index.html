@@ -1,0 +1,16 @@
+{% extends "base.html" %}
+{% block content %}
+    <h1>🌿 Papirus </h1>
+    <h1>Делись интересными и полезными ресурсами.<h1>
+    <ul class="user-list">
+        {% for user in users %}
+            <li class="user-item">
+                <a href="{{ url_for('user_profile', username=user.username) }}">{{ user.username }}</a>
+                {% if user.id in user_links_count %}
+                    <span class="link-count">({{ user_links_count[user.id] }} сегодня 🔥 )</span>
+                {% endif %}
+                <span class="user-likes"> 👍   {{ user_likes[user.id] }}  📖 {{ user_reads[user.id] }} </span>
+            </li>
+        {% endfor %}
+    </ul>
+{% endblock %}
